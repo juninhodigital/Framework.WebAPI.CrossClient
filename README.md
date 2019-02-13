@@ -30,11 +30,4 @@ The best way to contribute is by **putting in some good words** about the librar
  - Share it
  
 I would really love your help to make it better and usefull to the community.
-
-## More Projects
-
-**Entity Framework**
-- [Framework.Criptography](https://github.com/juninhodigital/Framework.Cryptography/)
-- [Framework.Data](https://github.com/juninhodigital/Framework.Data)
-
 *Need more info?* juninho_web@hotmail.com
