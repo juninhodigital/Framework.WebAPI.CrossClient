@@ -898,11 +898,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\jjunior\\Desktop\\New\\Framework\\NET Standard\\Services\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient.csproj",
+      "projectUniqueName": "C:\\Users\\jjunior\\Desktop\\New\\Framework\\NET Standard\\Services\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient.csproj",
       "projectName": "Framework.WebAPI.CrossClient",
-      "projectPath": "C:\\Users\\jjunior\\Desktop\\New\\Framework\\NET Standard\\Services\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient.csproj",
+      "projectPath": "C:\\Users\\jjunior\\Desktop\\New\\Framework\\NET Standard\\Services\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient.csproj",
       "packagesPath": "C:\\Users\\jjunior\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\jjunior\\Desktop\\New\\Framework\\NET Standard\\Services\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\obj\\",
+      "outputPath": "C:\\Users\\jjunior\\Desktop\\New\\Framework\\NET Standard\\Services\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\Framework.WebAPI.CrossClient\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
