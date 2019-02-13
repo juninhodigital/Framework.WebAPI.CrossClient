@@ -11,14 +11,14 @@ Dependencies
 ### TO DO
 - [ ] **Add Unit testing project**
 - [ ] **Create Unit tests**
-- [ ] **Use Singleton**
-
+- [ ] **Use Singleton pattern to use properly the HttpClient class by reusing its open sockets (tcp) before they time out regardless whether the dispose was called or not**
+    
 ## Download
 
 Full Version  | NuGet		       | Package Manager
 :------------ | :-------------|:----------------
-Framework.WebAPI.CrossClient          | <a href="https://www.nuget.org/packages/Framework.Services.Core/"><img src="https://github.com/juninhodigital/Framework.Core/blob/master/nuget.svg"/></a> | PM > Install-Package Framework.Services.Core -Version 1.0.2
-Framework.WebAPI.CrossClient          | <a href="https://www.nuget.org/packages/Framework.Services.Core/"><img src="https://github.com/juninhodigital/Framework.Core/blob/master/nuget.svg"/></a> | PM > Install-Package Framework.Services.Core -Version 1.0.2
+Framework.WebAPI.CrossClient          | <a href="https://www.nuget.org/packages/Framework.Services.Core/"><img src="https://github.com/juninhodigital/Framework.Core/blob/master/nuget.svg"/></a> | PM > Install-Package Framework.WebAPI.CrossClient -Version 1.0.2
+Framework.WebAPI.CrossClient          | <a href="https://www.nuget.org/packages/Framework.Services.Core/"><img src="https://github.com/juninhodigital/Framework.Core/blob/master/nuget.svg"/></a> | PM > Install-Package Framework.WebAPI.CrossClient -Version 1.0.2
 
 ## Contribute
 The best way to contribute is by **putting in some good words** about the library and help me out by:
