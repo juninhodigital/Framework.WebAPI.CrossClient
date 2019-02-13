@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2041
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Framework.WebAPI.CrossClient", "Framework.WebAPI.CrossClient\Framework.WebAPI.CrossClient.csproj", "{D7BA6C31-D2DF-4D70-85EF-131D00A0032A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D7BA6C31-D2DF-4D70-85EF-131D00A0032A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7BA6C31-D2DF-4D70-85EF-131D00A0032A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7BA6C31-D2DF-4D70-85EF-131D00A0032A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7BA6C31-D2DF-4D70-85EF-131D00A0032A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ABA4C018-205C-4D36-9A60-9DEA5EAF4B5A}
+	EndGlobalSection
+EndGlobal
