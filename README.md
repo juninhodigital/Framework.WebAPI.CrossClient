@@ -11,7 +11,6 @@ Dependencies
 ### TO DO
 - [ ] **Add Unit testing project**
 - [ ] **Create Unit tests**
-- [ ] **Use Singleton pattern to use properly the HttpClient class by reusing its open sockets (tcp) before they time out regardless whether the dispose was called or not**
     
 ## Download
 
