@@ -2,6 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Framework.Services.WebAPI.CrossClient</PackageId>
+    <Authors>Jose Carlos de Jesus Junior</Authors>
+    <Description>It is a .NET Core/Standard library that provides to a Web API project cache capabilities
+</Description>
+    <Copyright>Copyright 2018</Copyright>
+    <PackageLicenseUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</RepositoryUrl>
+    <PackageIconUrl>https://github.com/juninhodigital/Framework.Core/blob/master/Icons/FS_IconSmall.png?raw=true</PackageIconUrl>
+    <RepositoryType>Github</RepositoryType>
+    <PackageTags>Extension Methods, Library, Helper, WebAPI Cross Client, Web API Library</PackageTags>
+    <NeutralLanguage>English (United States)</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
