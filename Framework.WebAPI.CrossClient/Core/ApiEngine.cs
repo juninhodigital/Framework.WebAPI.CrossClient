@@ -1586,7 +1586,7 @@ namespace Framework.WebAPI.CrossClient
 
             output.AuthenticationStatus = new List<string>();
 
-            var IsAuthenticationEnabled = this.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
+            var IsAuthenticationEnabled = Core.Extensions.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
 
             IsAuthenticationEnabled.ThrowIfNull();
 
@@ -1685,7 +1685,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="credentials">ApiCredentials</param>
         private void Validate(string url, ApiCredentials credentials = null)
         {
-            var IsAuthenticationEnabled = this.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
+            var IsAuthenticationEnabled = Core.Extensions.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
 
             IsAuthenticationEnabled.ThrowIfNull();
 
@@ -1719,7 +1719,7 @@ namespace Framework.WebAPI.CrossClient
         /// <returns></returns>
         private async Task<string> ValidateAsync(string url, ApiCredentials credentials = null)
         {
-            var IsAuthenticationEnabled = this.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
+            var IsAuthenticationEnabled = Core.Extensions.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
 
             IsAuthenticationEnabled.ThrowIfNull();
 
