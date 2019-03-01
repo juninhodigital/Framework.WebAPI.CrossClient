@@ -5,8 +5,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Framework.Services.WebAPI.CrossClient</PackageId>
     <Authors>Jose Carlos de Jesus Junior</Authors>
-    <Description>It is a .NET Core/Standard library that provides to a Web API project cache capabilities
-</Description>
+    <Description>Framework.WebAPI.CrossClientIt is a .NET Core/Standard library that expose the HttpClient capabilities to cross client applications</Description>
     <Copyright>Copyright 2018</Copyright>
     <PackageLicenseUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</PackageProjectUrl>
