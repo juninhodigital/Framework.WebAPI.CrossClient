@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -47,20 +48,64 @@ namespace Framework.WebAPI.CrossClient
         #endregion
 
         #region| Constructor |
+
+        /// <summary>
+        /// Default constructor that does not require authentication
+        /// </summary>
+        public ApiEngine()
+        {
+
+        }
         
         /// <summary>
-        /// Constructor with authentication
+        /// Constructor with token based authentication
         /// </summary>       
         public ApiEngine(ApiCredentials credentials, bool useCredentials = true, string clientIP = "")
         {
             this.Credentials           = credentials;
             this.UseDefaultCredentials = useCredentials;
             this.ClientIP              = clientIP;
+
+            this.PunchoutSetupRequest();
         }
 
         #endregion
 
         #region| Methods |
+
+        /// <summary>
+        /// Create a new HttpRequest message to be send using a singleton httpclient
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="httpMethod"></param>
+        /// <param name="userToken"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private HttpRequestMessage CreateHttpRequestMessage(string url, HttpMethod httpMethod, HttpContent content)
+        {
+            var request = new HttpRequestMessage()
+            {
+                Method     = httpMethod,
+                RequestUri = new Uri(url),
+            };
+
+            if (content != null)
+            {
+                request.Content = content;
+            }
+
+            if (this.ClientIP.IsNotNull())
+            {
+                request.Headers.Add("clientIPAddress", this.ClientIP);
+            }
+
+            if (this.CurrentToken.IsNotNull())
+            {
+                request.Headers.Add("tokenCode", this.CurrentToken);
+            }
+
+            return request;
+        }
 
         #region| GET |
 
@@ -69,9 +114,8 @@ namespace Framework.WebAPI.CrossClient
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
         /// <returns>json or xml result</returns>
-        public Response<string> Get(string url, ApiCredentials credentials = null)
+        public async Task<Response<string>> GetStringAsync(string url)
         {
             var output = new Response<string>();
 
@@ -79,70 +123,20 @@ namespace Framework.WebAPI.CrossClient
             {
                 var requestUri = GetUrl(url);
 
-                using (var client = GetClient())
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
                 {
-                    SetHeader(client);
+                    var client = HttpClientSingleton.GetClient();
 
-                    var response = client.GetAsync(requestUri).Result;
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
                     {
-                        GetResponseContent(output, response);
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Gets a string from a web api endpoint using the GET HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>json or xml result</returns>
-        public async Task<Response<string>> GetAsync(string url, ApiCredentials credentials = null)
-        {
-            var result = await ValidateAsync(url, credentials);
-
-            if (result.IsPunchoutRequired())
-            {
-                return PunchoutSetupRequestMessage();
-            }
-
-            if (result.IsAuthenticationRequired())
-            {
-                return AuthenticationRequiredMessage();
-            }
-
-            var output = new Response<string>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.GetAsync(requestUri);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        await GetResponseContentAsync(output, response);
-                    }
-                    else
-                    {
-                        await GetDetailsAsync(output, response);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            GetResponseContent(output, response);
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
                     }
                 }
             }
@@ -159,142 +153,81 @@ namespace Framework.WebAPI.CrossClient
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
         /// <returns></returns>
-        public Response<T> Get<T>(string url, ApiCredentials credentials = null) where T : BusinessEntityStructure
+        public async Task<Response<T>> GetItemAsync<T>(string url) where T: new()
         {
             var output = new Response<T>();
 
-            var response = Get(url, credentials);
-
-            if (response.IsOk)
+            try
             {
-                output.Data = Convert<T>(response);
-                output.IsOk = true;
+                var requestUri = GetUrl(url);
 
-                output.StatusCode = HttpStatusCode.OK;
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                {
+                    var client = HttpClientSingleton.GetClient();
+
+                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                    {
+                        if (response.IsSuccessStatusCode)
+                        {
+                            GetResponseContent(output, response);
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
+                    }
+                }
             }
-            else
+            catch (Exception e)
             {
-                output.StatusCode = response.StatusCode;
-
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    output.ModelState = response.ModelState;
-                }
-                else
-                {
-                    output.ErrorMessage = response.ErrorMessage;
-                }
+                HandleError(output, e);
             }
 
             return output;
         }
 
-        /// <summary>
-        /// Gets an object from a web api endpoint using the GET HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns></returns>
-        public async Task<Response<T>> GetAsync<T>(string url, ApiCredentials credentials = null) where T : BusinessEntityStructure
-        {
-            var output = new Response<T>();
-
-            var response = await GetAsync(url, credentials);
-
-            if (response.IsOk)
-            {
-                output.Data = Convert<T>(response);
-                output.IsOk = true;
-
-                output.StatusCode = HttpStatusCode.OK;
-            }
-            else
-            {
-                output.StatusCode = response.StatusCode;
-
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    output.ModelState = response.ModelState;
-                }
-                else
-                {
-                    output.ErrorMessage = response.ErrorMessage;
-                }
-            }
-
-            return output;
-        }
 
         /// <summary>
         /// Gets a list of object from a web api endpoint using the GET HttpVerb
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
         /// <returns></returns>
-        public Response<IEnumerable<T>> GetItems<T>(string url, ApiCredentials credentials = null) where T : BusinessEntityStructure
+        public async Task<Response<IEnumerable<T>>> GetItemsAsync<T>(string url) where T : new()
         {
             var output = new Response<IEnumerable<T>>();
 
-            var response = Get(url, credentials);
-
-            if (response.IsOk)
+            try
             {
-                output.Data = Convert<IEnumerable<T>>(response);
-                output.IsOk = true;
+                var requestUri = GetUrl(url);
 
-                output.StatusCode = HttpStatusCode.OK;
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                {
+                    var client = HttpClientSingleton.GetClient();
+
+                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                    {
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var json = response.Content.ReadAsStringAsync().Result;
+
+                            output.Data = JsonConvert.DeserializeObject<List<T>>(json);
+                            output.IsOk = true;
+
+                            output.StatusCode = HttpStatusCode.OK;
+                          
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
+                    }
+                }
             }
-            else
+            catch (Exception e)
             {
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    output.ModelState = response.ModelState;
-                }
-                else
-                {
-                    output.ErrorMessage = response.ErrorMessage;
-                }
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Gets a list of object from a web api endpoint using the GET HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns></returns>
-        public async Task<Response<IEnumerable<T>>> GetItemsAsync<T>(string url, ApiCredentials credentials = null) where T : BusinessEntityStructure
-        {
-            var output = new Response<IEnumerable<T>>();
-
-            var response = await GetAsync(url, credentials);
-
-            if (response.IsOk)
-            {
-                output.Data = Convert<IEnumerable<T>>(response);
-                output.IsOk = true;
-
-                output.StatusCode = HttpStatusCode.OK;
-
-
-            }
-            else
-            {
-                if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    output.ModelState = response.ModelState;
-                }
-                else
-                {
-                    output.ErrorMessage = response.ErrorMessage;
-                }
+                HandleError(output, e);
             }
 
             return output;
@@ -309,11 +242,12 @@ namespace Framework.WebAPI.CrossClient
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
+        /// <param name="payload">string content</param>
         /// <param name="credentials">ApiCredentials</param>
-        /// <returns></returns>
-        public Response<bool> Post(string url, ApiCredentials credentials = null)
+        /// <returns>Response</returns>
+        public async Task<Response<bool>> PostStringAsync(string url, string payload, ApiCredentials credentials = null)
         {
-            Validate(url, credentials);
+            await ValidateAsync(url, credentials);
 
             var output = new Response<bool>();
 
@@ -321,22 +255,23 @@ namespace Framework.WebAPI.CrossClient
             {
                 var requestUri = GetUrl(url);
 
-                using (var client = GetClient())
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
                 {
-                    SetHeader(client);
+                    var client = HttpClientSingleton.GetClient();
 
-                    var response = client.PostAsync(requestUri, new StringContent("")).Result;
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await client.PostAsync(requestUri, new StringContent(payload)).ConfigureAwait(false))
                     {
-                        response.EnsureSuccessStatusCode();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            response.EnsureSuccessStatusCode();
 
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
+                            output.IsOk = true;
+                            output.StatusCode = response.StatusCode;
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
                     }
                 }
             }
@@ -349,15 +284,16 @@ namespace Framework.WebAPI.CrossClient
         }
 
         /// <summary>
-        /// Sends a string to a web api endpoint using the POST HttpVerb
+        /// Sends an object or a list to a web api endpoint using the POST Http verb
         /// </summary>
-        /// <typeparam name="T">param T</typeparam>
+        /// <typeparam name="T">input generic param type</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
+        /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public async Task<Response<bool>> PostAsync(string url, ApiCredentials credentials = null)
+        public async Task<Response<bool>> PostItemAsync<T>(string url, T payload, ApiCredentials credentials = null) where T : new()
         {
-            await ValidateAsync(url, credentials);
+            Validate(url, credentials);
 
             var output = new Response<bool>();
 
@@ -365,22 +301,23 @@ namespace Framework.WebAPI.CrossClient
             {
                 var requestUri = GetUrl(url);
 
-                using (var client = GetClient())
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
                 {
-                    SetHeader(client);
+                    var client = HttpClientSingleton.GetClient();
 
-                    var response = await client.PostAsync(requestUri, new StringContent(""));
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await client.PostAsJsonAsync(requestUri, payload).ConfigureAwait(false))
                     {
-                        response.EnsureSuccessStatusCode();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            response.EnsureSuccessStatusCode();
 
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
+                            output.IsOk = true;
+                            output.StatusCode = response.StatusCode;
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
                     }
                 }
             }
@@ -395,88 +332,42 @@ namespace Framework.WebAPI.CrossClient
         /// <summary>
         /// Sends an object to a web api endpoint using the POST Http verb
         /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
+        /// <typeparam name="T">input generic param type</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public Response<bool> Post<TInput>(string url, TInput payload, ApiCredentials credentials = null) where TInput : BusinessEntityStructure
-        {
-            Validate(url, credentials);
-
-            var output = new Response<bool>();
-
-            // Set to null the mapped properties cause it is not required in POST action
-            payload.MappedProperties = null;
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = client.PostAsJsonAsync(requestUri, payload).Result;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends an object to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <typeparam name="TOutput">output generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload">payload object</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public Response<TOutput> Post<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) where TInput : BusinessEntityStructure where TOutput: BusinessEntityStructure
+        public async Task<Response<TOutput>> PostItemAsync<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) 
+        where TInput : new()
+        where TOutput : new()
         {
             Validate(url, credentials);
 
             var output = new Response<TOutput>();
 
-            // Set to null the mapped properties cause it is not required in POST action
-            payload.MappedProperties = null;
-
             try
             {
                 var requestUri = GetUrl(url);
 
-                using (var client = GetClient())
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
                 {
-                    SetHeader(client);
+                    var client = HttpClientSingleton.GetClient();
 
-                    var response = client.PostAsJsonAsync(requestUri, payload).Result;
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await client.PostAsJsonAsync(requestUri, payload).ConfigureAwait(false))
                     {
-                        response.EnsureSuccessStatusCode();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            response.EnsureSuccessStatusCode();
 
-                        GetResponseContent<TOutput>(output, response);
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
+                            output.IsOk = true;
+                            output.StatusCode = response.StatusCode;
+
+                            GetResponseContent<TOutput>(output, response);
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
                     }
                 }
             }
@@ -489,381 +380,14 @@ namespace Framework.WebAPI.CrossClient
         }
 
         /// <summary>
-        ///  Sends an object asynchronously to a web api endpoint using the POST Http verb
+        /// Sends a list to a web api endpoint using the POST Http verb
         /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload"></param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PostAsync<TInput>(string url, TInput payload, ApiCredentials credentials = null) where TInput : BusinessEntityStructure
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<bool>();
-
-            // Set to null the mapped properties cause it is not required in POST action
-            payload.MappedProperties = null;
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PostAsJsonAsync(requestUri, payload);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        ///  Sends an object asynchronously to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <typeparam name="TOutput">output generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload"></param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<TOutput>> PostAsync<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) where TInput : BusinessEntityStructure where TOutput : BusinessEntityStructure
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<TOutput>();
-
-            // Set to null the mapped properties cause it is not required in POST action
-            payload.MappedProperties = null;
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PostAsJsonAsync(requestUri, payload);
-                    
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        GetResponseContent<TOutput>(output, response);
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-
-        /// <summary>
-        /// Sends a list of object to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payloads">payload object</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public Response<bool> PostItems<TInput>(string url, IEnumerable<TInput> payloads, ApiCredentials credentials = null) where TInput : BusinessEntityStructure
-        {
-            Validate(url, credentials);
-
-            var output = new Response<bool>();
-
-            if (payloads.IsNotNull())
-            {
-                // Set to null the mapped properties cause it is not required in POST action
-                foreach (var item in payloads.ToList())
-                {
-                    item.MappedProperties = null;
-                }
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = client.PostAsJsonAsync(requestUri, payloads).Result;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends a list of object to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <typeparam name="TOutput">output generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payloads">payload object</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public Response<TOutput> PostItems<TInput, TOutput>(string url, IEnumerable<TInput> payloads, ApiCredentials credentials = null) where TInput : BusinessEntityStructure where TOutput: BusinessEntityStructure
-        {
-            Validate(url, credentials);
-
-            var output = new Response<TOutput>();
-
-            if (payloads.IsNotNull())
-            {
-                // Set to null the mapped properties cause it is not required in POST action
-                foreach (var item in payloads.ToList())
-                {
-                    item.MappedProperties = null;
-                }
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = client.PostAsJsonAsync(requestUri, payloads).Result;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        GetResponseContent<TOutput>(output, response);
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-
-        /// <summary>
-        /// Sends a list of object to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <typeparam name="TOutput">output generic param type</typeparam>
+        /// <typeparam name="T">input generic param type</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public Response<IEnumerable<TOutput>> PostItems<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) where TInput : BusinessEntityStructure where TOutput : BusinessEntityStructure
-        {
-            Validate(url, credentials);
-
-            var output = new Response<IEnumerable<TOutput>>();
-
-            if (payload.IsNotNull())
-            {
-                payload.MappedProperties = null;
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = client.PostAsJsonAsync(requestUri, payload).Result;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        GetResponseContent(output, response);
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        ///  Sends a list of objects to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payloads"></param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PostItemsAsync<TInput>(string url, IEnumerable<TInput> payloads, ApiCredentials credentials = null) where TInput : BusinessEntityStructure
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<bool>();
-
-            if (payloads.IsNotNull())
-            {
-                // Set to null the mapped properties cause it is not required in POST action
-                foreach (var item in payloads.ToList())
-                {
-                    item.MappedProperties = null;
-                }
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PostAsJsonAsync(requestUri, payloads);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        ///  Sends a list of objects to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="TInput">input generic param type</typeparam>
-        /// <typeparam name="TOutput">output generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payloads"></param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<TOutput>> PostItemsAsync<TInput, TOutput>(string url, IEnumerable<TInput> payloads, ApiCredentials credentials = null) where TInput : BusinessEntityStructure where TOutput : BusinessEntityStructure
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<TOutput>();
-
-            if (payloads.IsNotNull())
-            {
-                // Set to null the mapped properties cause it is not required in POST action
-                foreach (var item in payloads.ToList())
-                {
-                    item.MappedProperties = null;
-                }
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PostAsJsonAsync(requestUri, payloads);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        GetResponseContent<TOutput>(output, response);
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        #endregion
-
-        #region| PUT |
-
-        /// <summary>
-        /// Sends a string to a web api endpoint using the PUT HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns></returns>
-        public Response<bool> Put(string url, ApiCredentials credentials = null)
+        public async Task<Response<bool>> PostItemsAsyncWithConfirmation<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
         {
             Validate(url, credentials);
 
@@ -873,22 +397,23 @@ namespace Framework.WebAPI.CrossClient
             {
                 var requestUri = GetUrl(url);
 
-                using (var client = GetClient())
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
                 {
-                    SetHeader(client);
+                    var client = HttpClientSingleton.GetClient();
 
-                    var response = client.PutAsync(requestUri, new StringContent("")).Result;
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await client.PostAsJsonAsync(requestUri, payload).ConfigureAwait(false))
                     {
-                        response.EnsureSuccessStatusCode();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            response.EnsureSuccessStatusCode();
 
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
+                            output.IsOk = true;
+                            output.StatusCode = response.StatusCode;
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
                     }
                 }
             }
@@ -901,334 +426,40 @@ namespace Framework.WebAPI.CrossClient
         }
 
         /// <summary>
-        /// Sends a string to a web api endpoint using the PUT HttpVerb
+        /// Sends a list to a web api endpoint using the POST Http verb
         /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PutAsync(string url, ApiCredentials credentials = null)
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<bool>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PutAsync(requestUri, new StringContent(""));
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends an object to a web api endpoint using the PUT Http verb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
+        /// <typeparam name="T">input generic param type</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public Response<bool> Put<T>(string url, T payload, ApiCredentials credentials = null) where T : BusinessEntityStructure
+        public async Task<Response<IEnumerable<T>>> PostItemsAsync<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
         {
             Validate(url, credentials);
 
-            var output = new Response<bool>();
-
-            // Set to null the mapped properties cause it is not required in PUT action
-            payload.MappedProperties = null;
+            var output = new Response<IEnumerable<T>>();
 
             try
             {
                 var requestUri = GetUrl(url);
 
-                using (var client = GetClient())
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Post, null))
                 {
-                    SetHeader(client);
+                    var client = HttpClientSingleton.GetClient();
 
-                    var response = client.PutAsJsonAsync(requestUri, payload).Result;
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await client.PostAsJsonAsync(requestUri, payload).ConfigureAwait(false))
                     {
-                        response.EnsureSuccessStatusCode();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            response.EnsureSuccessStatusCode();
 
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        ///  Sends an object asynchronously to a web api endpoint using the PUT Http verb
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload"></param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PutAsync<T>(string url, T payload, ApiCredentials credentials = null) where T : BusinessEntityStructure
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<bool>();
-
-            // Set to null the mapped properties cause it is not required in PUT action
-            payload.MappedProperties = null;
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PutAsJsonAsync(requestUri, payload);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends a list of object to a web api endpoint using the PUT Http verb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payloads">payload object</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public Response<bool> PutItems<T>(string url, IEnumerable<T> payloads, ApiCredentials credentials = null) where T : BusinessEntityStructure
-        {
-            Validate(url, credentials);
-
-            var output = new Response<bool>();
-
-            if (payloads.IsNotNull())
-            {
-                // Set to null the mapped properties cause it is not required in PUT action
-                foreach (var item in payloads.ToList())
-                {
-                    item.MappedProperties = null;
-                }
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = client.PutAsJsonAsync(requestUri, payloads).Result;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        ///  Sends a list of objects to a web api endpoint using the PUT Http verb
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payloads"></param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PutItemsAsync<T>(string url, IEnumerable<T> payloads, ApiCredentials credentials = null) where T : BusinessEntityStructure
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<bool>();
-
-            if (payloads.IsNotNull())
-            {
-                // Set to null the mapped properties cause it is not required in PUT action
-                foreach (var item in payloads.ToList())
-                {
-                    item.MappedProperties = null;
-                }
-            }
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.PutAsJsonAsync(requestUri, payloads);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        #endregion
-
-        #region| DELETE |
-
-        /// <summary>
-        /// Sends a string to a web api endpoint using the DELETE HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns></returns>
-        public Response<string> Delete(string url, ApiCredentials credentials = null)
-        {
-            Validate(url, credentials);
-
-            var output = new Response<string>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = client.DeleteAsync(requestUri).Result;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends a string to a web api endpoint using the PUT HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns></returns>
-        public async Task<Response<string>> DeleteAsync(string url, ApiCredentials credentials = null)
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<string>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var client = GetClient())
-                {
-                    SetHeader(client);
-
-                    var response = await client.DeleteAsync(requestUri);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        response.EnsureSuccessStatusCode();
-
-                        output.IsOk = true;
-                        output.StatusCode = response.StatusCode;
-                    }
-                    else
-                    {
-                        GetDetails(output, response);
+                            output.IsOk = true;
+                            output.StatusCode = response.StatusCode;
+                        }
+                        else
+                        {
+                            GetDetails(output, response);
+                        }
                     }
                 }
             }
@@ -1506,10 +737,10 @@ namespace Framework.WebAPI.CrossClient
         }
         #endregion
 
-        #region| Authentication .
+        #region| Authentication |
 
         /// <summary>
-        /// PunchOut is an easy-to-implement protocol for interactive sessions managed across the Internet. Using real-time,
+        /// Punchout is an easy-to-implement protocol for interactive sessions managed across the Internet. Using real-time,
         /// synchronous messages, it enables communication between applications, providing seamless interaction at remote sites.
         /// </summary>
         public async Task<List<string>> PunchoutSetupRequest()
