@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 using Framework.Core;
-using Framework.Entity;
-
 using Newtonsoft.Json;
 
 namespace Framework.WebAPI.CrossClient
@@ -110,33 +107,47 @@ namespace Framework.WebAPI.CrossClient
         #region| GET |
 
         /// <summary>
+        /// Send a GET request to the specified Uri as an asynchronous operation.
+        /// </summary>
+        /// <param name="url">The Uri the request is sent to</param>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        private async Task<HttpResponseMessage> GetResponse(string url)
+        {
+            HttpResponseMessage response = null;
+
+            var requestUri = GetUrl(url);
+
+            using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+            {
+                var client = HttpClientSingleton.GetClient();
+
+                response = await client.SendAsync(request).ConfigureAwait(false);
+            }
+
+            return response;
+        }
+
+        /// <summary>
         /// Gets a string from a web api endpoint using the GET HttpVerb
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
-        /// <returns>json or xml result</returns>
+        /// <returns>The task object representing the asynchronous operation</returns>
         public async Task<Response<string>> GetStringAsync(string url)
         {
             var output = new Response<string>();
 
             try
             {
-                var requestUri = GetUrl(url);
-
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                using (var response = await GetResponse(url))
                 {
-                    var client = HttpClientSingleton.GetClient();
-
-                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                    if (response.IsSuccessStatusCode)
                     {
-                        if (response.IsSuccessStatusCode)
-                        {
-                            GetResponseContent(output, response);
-                        }
-                        else
-                        {
-                            GetDetails(output, response);
-                        }
+                        GetResponseContent(output, response);
+                    }
+                    else
+                    {
+                        GetDetails(output, response);
                     }
                 }
             }
@@ -153,29 +164,22 @@ namespace Framework.WebAPI.CrossClient
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
-        /// <returns></returns>
+        /// <returns>The task object representing the asynchronous operation</returns>
         public async Task<Response<T>> GetItemAsync<T>(string url) where T: new()
         {
             var output = new Response<T>();
 
             try
             {
-                var requestUri = GetUrl(url);
-
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                using (var response = await GetResponse(url))
                 {
-                    var client = HttpClientSingleton.GetClient();
-
-                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                    if (response.IsSuccessStatusCode)
                     {
-                        if (response.IsSuccessStatusCode)
-                        {
-                            GetResponseContent(output, response);
-                        }
-                        else
-                        {
-                            GetDetails(output, response);
-                        }
+                        GetResponseContent(output, response);
+                    }
+                    else
+                    {
+                        GetDetails(output, response);
                     }
                 }
             }
@@ -187,41 +191,33 @@ namespace Framework.WebAPI.CrossClient
             return output;
         }
 
-
         /// <summary>
         /// Gets a list of object from a web api endpoint using the GET HttpVerb
         /// </summary>
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
-        /// <returns></returns>
+        /// <returns>The task object representing the asynchronous operation</returns>
         public async Task<Response<IEnumerable<T>>> GetItemsAsync<T>(string url) where T : new()
         {
             var output = new Response<IEnumerable<T>>();
 
             try
             {
-                var requestUri = GetUrl(url);
-
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                using (var response = await GetResponse(url))
                 {
-                    var client = HttpClientSingleton.GetClient();
-
-                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                    if (response.IsSuccessStatusCode)
                     {
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var json = response.Content.ReadAsStringAsync().Result;
+                        var json = response.Content.ReadAsStringAsync().Result;
 
-                            output.Data = JsonConvert.DeserializeObject<List<T>>(json);
-                            output.IsOk = true;
+                        output.Data = JsonConvert.DeserializeObject<List<T>>(json);
+                        output.IsOk = true;
 
-                            output.StatusCode = HttpStatusCode.OK;
-                          
-                        }
-                        else
-                        {
-                            GetDetails(output, response);
-                        }
+                        output.StatusCode = HttpStatusCode.OK;
+
+                    }
+                    else
+                    {
+                        GetDetails(output, response);
                     }
                 }
             }
@@ -255,11 +251,11 @@ namespace Framework.WebAPI.CrossClient
             {
                 var requestUri = GetUrl(url);
 
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Post,  new StringContent(payload)))
                 {
                     var client = HttpClientSingleton.GetClient();
 
-                    using (var response = await client.PostAsync(requestUri, new StringContent(payload)).ConfigureAwait(false))
+                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
                     {
                         if (response.IsSuccessStatusCode)
                         {
@@ -387,7 +383,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public async Task<Response<bool>> PostItemsAsyncWithConfirmation<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
+        public async Task<Response<bool>> PostItemsAsync<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
         {
             Validate(url, credentials);
 
@@ -433,7 +429,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public async Task<Response<IEnumerable<T>>> PostItemsAsync<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
+        public async Task<Response<IEnumerable<T>>> PostItemsAsyncWithReturn<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
         {
             Validate(url, credentials);
 
@@ -475,26 +471,6 @@ namespace Framework.WebAPI.CrossClient
 
         #region| Shared |
 
-        /// <summary>
-        /// Set the default request headers with all parameters required to invoke a WebAPI with authentication
-        /// </summary>
-        /// <param name="client">HttpClient</param>
-        private void SetHeader(HttpClient client)
-        {
-            // Use the given url from the parameter method
-            //client.BaseAddress = new Uri(endpoint);
-
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            // Add to the request header the client IP Address
-            client.DefaultRequestHeaders.Add("clientIPAddress", this.ClientIP);
-
-            if (this.CurrentToken.IsNotNull())
-            {
-                client.DefaultRequestHeaders.Add("tokenCode", this.CurrentToken);
-            }
-        }
 
         /// <summary>
         /// Try to get the response content from a GET request
