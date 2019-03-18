@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
-using Framework.Core;
 using Newtonsoft.Json;
+using Framework.Core;
 
 namespace Framework.WebAPI.CrossClient
 {
@@ -234,52 +233,6 @@ namespace Framework.WebAPI.CrossClient
         #region| POST |
 
         /// <summary>
-        /// Sends a string to a web api endpoint using the POST HttpVerb
-        /// </summary>
-        /// <typeparam name="T">param T</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload">string content</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PostStringAsync(string url, string payload, ApiCredentials credentials = null)
-        {
-            await ValidateAsync(url, credentials);
-
-            var output = new Response<bool>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Post,  new StringContent(payload)))
-                {
-                    var client = HttpClientSingleton.GetClient();
-
-                    using (var response = await client.SendAsync(request).ConfigureAwait(false))
-                    {
-                        if (response.IsSuccessStatusCode)
-                        {
-                            response.EnsureSuccessStatusCode();
-
-                            output.IsOk = true;
-                            output.StatusCode = response.StatusCode;
-                        }
-                        else
-                        {
-                            GetDetails(output, response);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
         /// Sends an object or a list to a web api endpoint using the POST Http verb
         /// </summary>
         /// <typeparam name="T">input generic param type</typeparam>
@@ -345,7 +298,7 @@ namespace Framework.WebAPI.CrossClient
             {
                 var requestUri = GetUrl(url);
 
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
+                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Post, null))
                 {
                     var client = HttpClientSingleton.GetClient();
 
@@ -359,98 +312,6 @@ namespace Framework.WebAPI.CrossClient
                             output.StatusCode = response.StatusCode;
 
                             GetResponseContent<TOutput>(output, response);
-                        }
-                        else
-                        {
-                            GetDetails(output, response);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends a list to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="T">input generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload">payload object</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<bool>> PostItemsAsync<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
-        {
-            Validate(url, credentials);
-
-            var output = new Response<bool>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Get, null))
-                {
-                    var client = HttpClientSingleton.GetClient();
-
-                    using (var response = await client.PostAsJsonAsync(requestUri, payload).ConfigureAwait(false))
-                    {
-                        if (response.IsSuccessStatusCode)
-                        {
-                            response.EnsureSuccessStatusCode();
-
-                            output.IsOk = true;
-                            output.StatusCode = response.StatusCode;
-                        }
-                        else
-                        {
-                            GetDetails(output, response);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(output, e);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Sends a list to a web api endpoint using the POST Http verb
-        /// </summary>
-        /// <typeparam name="T">input generic param type</typeparam>
-        /// <param name="url">The Uri the request is sent to.</param>
-        /// <param name="payload">payload object</param>
-        /// <param name="credentials">ApiCredentials</param>
-        /// <returns>Response</returns>
-        public async Task<Response<IEnumerable<T>>> PostItemsAsyncWithReturn<T>(string url, IEnumerable<T> payload, ApiCredentials credentials = null) where T : new()
-        {
-            Validate(url, credentials);
-
-            var output = new Response<IEnumerable<T>>();
-
-            try
-            {
-                var requestUri = GetUrl(url);
-
-                using (var request = CreateHttpRequestMessage(requestUri, HttpMethod.Post, null))
-                {
-                    var client = HttpClientSingleton.GetClient();
-
-                    using (var response = await client.PostAsJsonAsync(requestUri, payload).ConfigureAwait(false))
-                    {
-                        if (response.IsSuccessStatusCode)
-                        {
-                            response.EnsureSuccessStatusCode();
-
-                            output.IsOk = true;
-                            output.StatusCode = response.StatusCode;
                         }
                         else
                         {
