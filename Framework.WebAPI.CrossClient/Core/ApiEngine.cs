@@ -132,6 +132,17 @@ namespace Framework.WebAPI.CrossClient
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
         /// <returns>The task object representing the asynchronous operation</returns>
+        public Response<string> GetString(string url)
+        {
+            return GetStringAsync(url).Result;
+        }
+
+        /// <summary>
+        /// Gets a string from a web api endpoint using the GET HttpVerb
+        /// </summary>
+        /// <typeparam name="T">param T</typeparam>
+        /// <param name="url">The Uri the request is sent to.</param>
+        /// <returns>The task object representing the asynchronous operation</returns>
         public async Task<Response<string>> GetStringAsync(string url)
         {
             var output = new Response<string>();
@@ -164,6 +175,16 @@ namespace Framework.WebAPI.CrossClient
         /// <typeparam name="T">param T</typeparam>
         /// <param name="url">The Uri the request is sent to.</param>
         /// <returns>The task object representing the asynchronous operation</returns>
+        public Response<T> GetItem<T>(string url) where T : new()
+        {
+            return GetItemAsync<T>(url).Result;
+        }
+        /// <summary>
+        /// Gets an object from a web api endpoint using the GET HttpVerb
+        /// </summary>
+        /// <typeparam name="T">param T</typeparam>
+        /// <param name="url">The Uri the request is sent to.</param>
+        /// <returns>The task object representing the asynchronous operation</returns>
         public async Task<Response<T>> GetItemAsync<T>(string url) where T: new()
         {
             var output = new Response<T>();
@@ -188,6 +209,17 @@ namespace Framework.WebAPI.CrossClient
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Gets a list of object from a web api endpoint using the GET HttpVerb
+        /// </summary>
+        /// <typeparam name="T">param T</typeparam>
+        /// <param name="url">The Uri the request is sent to.</param>
+        /// <returns>The task object representing the asynchronous operation</returns>
+        public Response<IEnumerable<T>> GetItems<T>(string url) where T : new()
+        {
+            return GetItemsAsync<T>(url).Result;
         }
 
         /// <summary>
@@ -240,6 +272,19 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
+        public Response<bool> PostItem<T>(string url, T payload, ApiCredentials credentials = null) where T : new()
+        {
+            return PostItemAsync<T>(url, payload, credentials).Result;
+        }
+
+        /// <summary>
+        /// Sends an object or a list to a web api endpoint using the POST Http verb
+        /// </summary>
+        /// <typeparam name="T">input generic param type</typeparam>
+        /// <param name="url">The Uri the request is sent to.</param>
+        /// <param name="payload">payload object</param>
+        /// <param name="credentials">ApiCredentials</param>
+        /// <returns>Response</returns>
         public async Task<Response<bool>> PostItemAsync<T>(string url, T payload, ApiCredentials credentials = null) where T : new()
         {
             Validate(url, credentials);
@@ -276,6 +321,21 @@ namespace Framework.WebAPI.CrossClient
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Sends an object to a web api endpoint using the POST Http verb
+        /// </summary>
+        /// <typeparam name="T">input generic param type</typeparam>
+        /// <param name="url">The Uri the request is sent to.</param>
+        /// <param name="payload">payload object</param>
+        /// <param name="credentials">ApiCredentials</param>
+        /// <returns>Response</returns>
+        public Response<TOutput> PostItem<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) 
+        where TInput : new() 
+        where TOutput : new()
+        {
+            return PostItemAsync<TInput, TOutput>(url, payload, credentials).Result;
         }
 
         /// <summary>
