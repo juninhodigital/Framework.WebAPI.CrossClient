@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 
 namespace Framework.WebAPI.CrossClient
@@ -28,7 +29,14 @@ namespace Framework.WebAPI.CrossClient
 
         static HttpClientSingleton() { }
 
-        private HttpClientSingleton(bool useDefaultCredentials = true) : base(new HttpClientHandler() { UseDefaultCredentials = useDefaultCredentials })
+        private HttpClientSingleton(bool useDefaultCredentials = true) : base
+        (
+            new HttpClientHandler()
+            {
+                UseDefaultCredentials = useDefaultCredentials,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            }
+        )
         {
             Timeout = TimeSpan.FromMilliseconds(15000);
             MaxResponseContentBufferSize = 256000;
