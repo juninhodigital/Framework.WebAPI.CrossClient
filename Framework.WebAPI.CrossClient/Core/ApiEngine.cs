@@ -41,6 +41,11 @@ namespace Framework.WebAPI.CrossClient
         /// Returns true if the default credentials are used; otherwise false. The default value is false.
         private bool UseDefaultCredentials { get; set; }
 
+        /// <summary>
+        /// Check whether the authentication through punchout request/token is required
+        /// </summary>
+        private bool IsAuthenticationEnabled { get; set; }
+
         #endregion
 
         #region| Constructor |
@@ -62,7 +67,8 @@ namespace Framework.WebAPI.CrossClient
             this.UseDefaultCredentials = useCredentials;
             this.ClientIP              = clientIP;
 
-            this.PunchoutSetupRequest();
+            PunchoutSetupRequest();
+            
         }
 
         #endregion
@@ -640,7 +646,7 @@ namespace Framework.WebAPI.CrossClient
         /// Punchout is an easy-to-implement protocol for interactive sessions managed across the Internet. Using real-time,
         /// synchronous messages, it enables communication between applications, providing seamless interaction at remote sites.
         /// </summary>
-        public async Task<List<string>> PunchoutSetupRequest()
+        public List<string> PunchoutSetupRequest()
         {
             var output = new List<string>();
 
@@ -658,7 +664,7 @@ namespace Framework.WebAPI.CrossClient
                         client.DefaultRequestHeaders.Add("sharedSecret", Credentials.SharedSecret);
                         client.DefaultRequestHeaders.Add("clientIPAddress", this.ClientIP);
 
-                        var response = await client.GetAsync(Credentials.BaseAddress);
+                        var response = client.GetAsync(Credentials.BaseAddress).Result;
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -708,17 +714,15 @@ namespace Framework.WebAPI.CrossClient
         /// Acomplishe the user authentication and authorization process
         /// </summary>
         /// <returns></returns>
-        public async Task<T> Authenticate<T>() where T: ITokenUser
+        public async Task<T> Authenticate<T>(bool IsAuthenticationEnabled = false) where T: ITokenUser
         {
             var output = Activator.CreateInstance<T>();
 
             output.AuthenticationStatus = new List<string>();
 
-            var IsAuthenticationEnabled = Core.Extensions.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
+            this.IsAuthenticationEnabled = IsAuthenticationEnabled;
 
-            IsAuthenticationEnabled.ThrowIfNull();
-
-            if (IsAuthenticationEnabled.IsEqual("true"))
+            if (IsAuthenticationEnabled)
             {
                 try
                 {
@@ -813,11 +817,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="credentials">ApiCredentials</param>
         private void Validate(string url, ApiCredentials credentials = null)
         {
-            var IsAuthenticationEnabled = Core.Extensions.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
-
-            IsAuthenticationEnabled.ThrowIfNull();
-
-            if (IsAuthenticationEnabled.IsEqual("true"))
+            if (IsAuthenticationEnabled)
             {
                 if (credentials.IsNotNull())
                 {
@@ -827,14 +827,14 @@ namespace Framework.WebAPI.CrossClient
                 // Punchout setup request
                 if (this.CurrentEndpoint.IsNull())
                 {
-                    throw new Exception("FRAMEWORK.WebAPI.CrossClient: Please carry out the punchout setup request in order to continue.");
+                    throw new Exception("Please carry out the punchout setup request in order to continue.");
                 }
 
-                //// Authentication / Authorization
-                //if (url.StartsWith("authenticate") == false && this.CurrentToken.IsNull())
-                //{
-                //    Authenticate().Wait();
-                //}
+                // Authentication / Authorization
+                if (url.StartsWith("authenticate") == false && this.CurrentToken.IsNull())
+                {
+                    throw new Exception("The current token is null or empty");
+                }
             }
 
         }
@@ -845,13 +845,9 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="url">The Uri the request is sent to.</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns></returns>
-        private async Task<string> ValidateAsync(string url, ApiCredentials credentials = null)
+        private string ValidateAsync(string url, ApiCredentials credentials = null)
         {
-            var IsAuthenticationEnabled = Core.Extensions.GetAppSettings("FRAMEWORK.CROSS.WEBAPI.IsAuthenticationEnabled");
-
-            IsAuthenticationEnabled.ThrowIfNull();
-
-            if (IsAuthenticationEnabled.IsEqual("true"))
+            if (IsAuthenticationEnabled)
             {
                 if (credentials.IsNotNull())
                 {

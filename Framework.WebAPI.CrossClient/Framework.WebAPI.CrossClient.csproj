@@ -22,10 +22,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Framework.Services.Core" Version="1.0.3" />
-    <PackageReference Include="Framework.Services.Entity" Version="1.0.6" />
+    <PackageReference Include="Framework.Services.Core" Version="1.0.4" />
+    <PackageReference Include="Framework.Services.Entity" Version="1.0.7" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
 
 </Project>
