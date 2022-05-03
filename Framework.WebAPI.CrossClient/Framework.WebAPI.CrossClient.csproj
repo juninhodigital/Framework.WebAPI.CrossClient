@@ -1,31 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Framework.Services.WebAPI.CrossClient</PackageId>
-    <Authors>Jose Carlos de Jesus Junior</Authors>
-    <Description>Framework.WebAPI.CrossClientIt is a .NET Core/Standard library that expose the HttpClient capabilities to cross client applications</Description>
-    <Copyright>Copyright 2018</Copyright>
-    <PackageLicenseUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</RepositoryUrl>
-    <PackageIconUrl>https://github.com/juninhodigital/Framework.Core/blob/master/Icons/FS_IconSmall.png?raw=true</PackageIconUrl>
-    <RepositoryType>Github</RepositoryType>
-    <PackageTags>Extension Methods, Library, Helper, WebAPI Cross Client, Web API Library</PackageTags>
-    <NeutralLanguage>English (United States)</NeutralLanguage>
-    <Version>1.0.4</Version>
-  </PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>false</Optimize>
+
+    <Authors>Jose Carlos de Jesus Junior</Authors>
+    <Company>Jose Carlos de Jesus Junior</Company>
+    <Description>Framework.WebAPI.CrossClientIt is a .NET Core/Standard library that expose the HttpClient capabilities to cross client applications</Description>
+    <Copyright>Copyright 2022</Copyright>
+    <Version>1.0.5</Version>
+    <PackageId>Framework.Services.WebAPI.CrossClient</PackageId>
+    <PackageProjectUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/juninhodigital/Framework.Core/blob/master/Icons/FS_IconSmall.png?raw=true</PackageIconUrl>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageTags>Extension Methods, Library, Helper, WebAPI Cross Client, Web API Library</PackageTags>
+    <RepositoryType>Github</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <RepositoryUrl>https://github.com/juninhodigital/Framework.WebAPI.CrossClient</RepositoryUrl>
+    <NeutralLanguage>English (United States)</NeutralLanguage>
+    
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Framework.Services.Core" Version="1.0.4" />
-    <PackageReference Include="Framework.Services.Entity" Version="1.0.7" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="Framework.Services.Core" Version="1.0.22" />
+    <PackageReference Include="Framework.Services.Entity" Version="1.0.12" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.8" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
 </Project>
