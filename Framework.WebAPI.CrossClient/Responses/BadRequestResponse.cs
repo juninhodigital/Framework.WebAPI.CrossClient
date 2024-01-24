@@ -7,6 +7,6 @@ namespace Framework.WebAPI.CrossClient
     /// </summary>
     public class BadRequestResponse
     {
-        public Dictionary<string, string[]> ModelState { get; set; }
+        public Dictionary<string, string[]> ModelState { get; set; } = new();
     }
 }

@@ -96,12 +96,12 @@ namespace Framework.WebAPI.CrossClient
                 request.Content = content;
             }
 
-            if (this.ClientIP.IsNotNull())
+            if (this.ClientIP!=null)
             {
                 request.Headers.Add("clientIPAddress", this.ClientIP);
             }
 
-            if (this.CurrentToken.IsNotNull())
+            if (this.CurrentToken!=null)
             {
                 request.Headers.Add("tokenCode", this.CurrentToken);
             }
@@ -118,7 +118,7 @@ namespace Framework.WebAPI.CrossClient
         /// <returns>The task object representing the asynchronous operation</returns>
         private async Task<HttpResponseMessage> GetResponse(string url)
         {
-            HttpResponseMessage response = null;
+            HttpResponseMessage? response = null;
 
             var requestUri = GetUrl(url);
 
@@ -278,7 +278,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public Response<bool> PostItem<T>(string url, T payload, ApiCredentials credentials = null) where T : new()
+        public Response<bool> PostItem<T>(string url, T payload, ApiCredentials? credentials = null) where T : new()
         {
             return PostItemAsync<T>(url, payload, credentials).Result;
         }
@@ -291,7 +291,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public async Task<Response<bool>> PostItemAsync<T>(string url, T payload, ApiCredentials credentials = null) where T : new()
+        public async Task<Response<bool>> PostItemAsync<T>(string url, T payload, ApiCredentials? credentials = null) where T : new()
         {
             Validate(url, credentials);
 
@@ -337,7 +337,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public Response<TOutput> PostItem<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) 
+        public Response<TOutput> PostItem<TInput, TOutput>(string url, TInput payload, ApiCredentials? credentials = null) 
         where TInput : new() 
         where TOutput : new()
         {
@@ -352,7 +352,7 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="payload">payload object</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns>Response</returns>
-        public async Task<Response<TOutput>> PostItemAsync<TInput, TOutput>(string url, TInput payload, ApiCredentials credentials = null) 
+        public async Task<Response<TOutput>> PostItemAsync<TInput, TOutput>(string url, TInput payload, ApiCredentials? credentials = null) 
         where TInput : new()
         where TOutput : new()
         {
@@ -416,7 +416,7 @@ namespace Framework.WebAPI.CrossClient
             // by calling .Result you are synchronously reading the result
             var resultContent = responseContent.ReadAsStringAsync().Result;
 
-            if (resultContent.IsNotNull())
+            if (resultContent!=null)
             {
                 resultContent = resultContent.Replace("\\", "").Trim(new char[1] { '"' });
 
@@ -442,7 +442,7 @@ namespace Framework.WebAPI.CrossClient
             // by calling .Result you are synchronously reading the result
             var resultContent = responseContent.ReadAsStringAsync().Result;
 
-            if (resultContent.IsNotNull())
+            if (resultContent!=null)
             {
                 // Convert the received string to the given class
                 output.Data = Convert<T>(resultContent);
@@ -466,7 +466,7 @@ namespace Framework.WebAPI.CrossClient
             // by calling .Result you are synchronously reading the result
             var resultContent = await responseContent.ReadAsStringAsync();
 
-            if (resultContent.IsNotNull())
+            if (resultContent!=null)
             {
                 // Convert the received string to the given class
                 output.Data = resultContent;
@@ -493,7 +493,7 @@ namespace Framework.WebAPI.CrossClient
                 // by calling .Result you are synchronously reading the result
                 var badRequestResponse = response.Content.ReadAsAsync<BadRequestResponse>().Result;
 
-                if (badRequestResponse.IsNotNull())
+                if (badRequestResponse!=null)
                 {
                     // Convert the received string to the given class
                     output.ModelState = badRequestResponse.ModelState;
@@ -532,7 +532,7 @@ namespace Framework.WebAPI.CrossClient
                 // by calling .Result you are synchronously reading the result
                 var badRequestResponse = await response.Content.ReadAsAsync<BadRequestResponse>();
 
-                if (badRequestResponse.IsNotNull())
+                if (badRequestResponse!=null)
                 {
                     // Convert the received string to the given class
                     output.ModelState = badRequestResponse.ModelState;
@@ -558,7 +558,7 @@ namespace Framework.WebAPI.CrossClient
         /// <returns></returns>
         private string GetUrl(string url)
         {
-            if (this.CurrentEndpoint.IsNotNull())
+            if (this.CurrentEndpoint!=null)
             {
                 return this.CurrentEndpoint + url;
             }
@@ -603,15 +603,15 @@ namespace Framework.WebAPI.CrossClient
             output.IsOk = false;
             output.ErrorMessage = e.Message;
 
-            if (e.InnerException.IsNotNull())
+            if (e.InnerException!=null)
             {
                 output.ErrorMessage += Environment.NewLine + e.InnerException.Message;
 
-                if (e.InnerException.InnerException.IsNotNull())
+                if (e.InnerException.InnerException!=null)
                 {
                     output.ErrorMessage += Environment.NewLine + e.InnerException.InnerException.Message;
 
-                    if (e.InnerException.InnerException.InnerException.IsNotNull())
+                    if (e.InnerException.InnerException.InnerException!=null)
                     {
                         output.ErrorMessage += Environment.NewLine + e.InnerException.InnerException.InnerException.Message;
                     }
@@ -674,7 +674,7 @@ namespace Framework.WebAPI.CrossClient
                             // by calling .Result you are synchronously reading the result
                             var resultContent = responseContent.ReadAsStringAsync().Result;
 
-                            if (resultContent.IsNotNull())
+                            if (resultContent!=null)
                             {
                                 resultContent = resultContent.Replace("\\", "").Trim(new char[1] { '"' });
 
@@ -765,7 +765,7 @@ namespace Framework.WebAPI.CrossClient
 
                             var badRequest = JsonConvert.DeserializeObject<BadRequestResponse>(resultContent);
 
-                            if(badRequest.IsNotNull() && badRequest.ModelState.IsNotNull())
+                            if(badRequest!=null && badRequest.ModelState!=null)
                             {
                                 var details = string.Empty;
 
@@ -815,23 +815,23 @@ namespace Framework.WebAPI.CrossClient
         /// </summary>
         /// <param name="url">The Uri the request is sent to.</param>
         /// <param name="credentials">ApiCredentials</param>
-        private void Validate(string url, ApiCredentials credentials = null)
+        private void Validate(string url, ApiCredentials? credentials = null)
         {
             if (IsAuthenticationEnabled)
             {
-                if (credentials.IsNotNull())
+                if (credentials!=null)
                 {
                     this.Credentials = credentials;
                 }
 
                 // Punchout setup request
-                if (this.CurrentEndpoint.IsNull())
+                if (this.CurrentEndpoint==null)
                 {
                     throw new Exception("Please carry out the punchout setup request in order to continue.");
                 }
 
                 // Authentication / Authorization
-                if (url.StartsWith("authenticate") == false && this.CurrentToken.IsNull())
+                if (url.StartsWith("authenticate") == false && this.CurrentToken==null)
                 {
                     throw new Exception("The current token is null or empty");
                 }
@@ -845,24 +845,24 @@ namespace Framework.WebAPI.CrossClient
         /// <param name="url">The Uri the request is sent to.</param>
         /// <param name="credentials">ApiCredentials</param>
         /// <returns></returns>
-        private string ValidateAsync(string url, ApiCredentials credentials = null)
+        private string ValidateAsync(string url, ApiCredentials? credentials = null)
         {
             if (IsAuthenticationEnabled)
             {
-                if (credentials.IsNotNull())
+                if (credentials!=null)
                 {
                     this.Credentials = credentials;
                 }
 
                 // Punchout setup request
-                if (this.CurrentEndpoint.IsNull())
+                if (this.CurrentEndpoint==null)
                 {
                     return "PUNCHOUT_SETUP_REQUEST";
 
                 }
 
                 // Authentication / Authorization
-                if (url.StartsWith("authenticate") == false && this.CurrentToken.IsNull())
+                if (url.StartsWith("authenticate") == false && this.CurrentToken==null)
                 {
                     //await Authenticate();
                     return "AUTHENTICATE";
@@ -880,11 +880,12 @@ namespace Framework.WebAPI.CrossClient
         /// <returns></returns>
         public static Response<string> PunchoutSetupRequestMessage()
         {
-            var output = new Response<string>();
-
-            output.IsOk = false;
-            output.ErrorMessage = "Please, carry out the punchout setup request";
-            output.StatusCode = HttpStatusCode.Unauthorized;
+            var output = new Response<string>
+            {
+                IsOk         = false,
+                ErrorMessage = "Please, carry out the punchout setup request",
+                StatusCode   = HttpStatusCode.Unauthorized
+            };
 
             return output;
 
@@ -897,14 +898,14 @@ namespace Framework.WebAPI.CrossClient
         /// <returns></returns>
         public static Response<string> AuthenticationRequiredMessage()
         {
-            var output = new Response<string>();
-
-            output.IsOk = false;
-            output.ErrorMessage = "Please, carry out the authentication process";
-            output.StatusCode = HttpStatusCode.Unauthorized;
+            var output = new Response<string>
+            {
+                IsOk         = false,
+                ErrorMessage = "Please, carry out the authentication process",
+                StatusCode   = HttpStatusCode.Unauthorized
+            };
 
             return output;
-
         }
 
         #endregion
